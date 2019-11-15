@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/features"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
@@ -142,7 +142,7 @@ func TestAccAzureRMAutomationAccount_complete(t *testing.T) {
 }
 
 func testCheckAzureRMAutomationAccountDestroy(s *terraform.State) error {
-	conn := testAccProvider.Meta().(*ArmClient).automation.AccountClient
+	conn := testAccProvider.Meta().(*ArmClient).Automation.AccountClient
 	ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 	for _, rs := range s.RootModule().Resources {
@@ -183,7 +183,7 @@ func testCheckAzureRMAutomationAccountExists(resourceName string) resource.TestC
 			return fmt.Errorf("Bad: no resource group found in state for Automation Account: '%s'", name)
 		}
 
-		conn := testAccProvider.Meta().(*ArmClient).automation.AccountClient
+		conn := testAccProvider.Meta().(*ArmClient).Automation.AccountClient
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 		resp, err := conn.Get(ctx, resourceGroup, name)
@@ -232,7 +232,7 @@ resource "azurerm_automation_account" "test" {
 
   sku {
     name = "Basic"
-  } 
+  }
 }
 `, rInt, location, rInt)
 }
@@ -281,7 +281,7 @@ resource "azurerm_automation_account" "test" {
   resource_group_name = "${azurerm_resource_group.test.name}"
 
   sku_name = "Basic"
-  
+
   tags = {
     "hello" = "world"
   }

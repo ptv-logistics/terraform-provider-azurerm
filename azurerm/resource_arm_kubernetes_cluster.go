@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-06-01/containerservice"
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/kubernetes"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/suppress"
@@ -15,6 +16,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/validate"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/features"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/tags"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/timeouts"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
@@ -26,6 +28,13 @@ func resourceArmKubernetesCluster() *schema.Resource {
 		Delete: resourceArmKubernetesClusterDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(90 * time.Minute),
+			Read:   schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(90 * time.Minute),
+			Delete: schema.DefaultTimeout(90 * time.Minute),
 		},
 
 		CustomizeDiff: func(diff *schema.ResourceDiff, v interface{}) error {
@@ -210,6 +219,11 @@ func resourceArmKubernetesCluster() *schema.Resource {
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
+
+						"enable_node_public_ip": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -276,7 +290,7 @@ func resourceArmKubernetesCluster() *schema.Resource {
 									},
 									"log_analytics_workspace_id": {
 										Type:         schema.TypeString,
-										Required:     true,
+										Optional:     true,
 										ValidateFunc: azure.ValidateResourceID,
 									},
 								},
@@ -295,7 +309,7 @@ func resourceArmKubernetesCluster() *schema.Resource {
 									},
 									"subnet_name": {
 										Type:         schema.TypeString,
-										Required:     true,
+										Optional:     true,
 										ValidateFunc: validate.NoEmptyStrings,
 									},
 								},
@@ -303,6 +317,20 @@ func resourceArmKubernetesCluster() *schema.Resource {
 						},
 
 						"kube_dashboard": {
+							Type:     schema.TypeList,
+							MaxItems: 1,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"enabled": {
+										Type:     schema.TypeBool,
+										Required: true,
+									},
+								},
+							},
+						},
+
+						"azure_policy": {
 							Type:     schema.TypeList,
 							MaxItems: 1,
 							Optional: true,
@@ -623,8 +651,9 @@ func resourceArmKubernetesCluster() *schema.Resource {
 }
 
 func resourceArmKubernetesClusterCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*ArmClient).containers.KubernetesClustersClient
-	ctx := meta.(*ArmClient).StopContext
+	client := meta.(*ArmClient).Containers.KubernetesClustersClient
+	ctx, cancel := timeouts.ForCreate(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 	tenantId := meta.(*ArmClient).tenantId
 
 	log.Printf("[INFO] preparing arguments for Managed Kubernetes Cluster create.")
@@ -716,8 +745,9 @@ func resourceArmKubernetesClusterCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceArmKubernetesClusterUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*ArmClient).containers.KubernetesClustersClient
-	ctx := meta.(*ArmClient).StopContext
+	client := meta.(*ArmClient).Containers.KubernetesClustersClient
+	ctx, cancel := timeouts.ForUpdate(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 	tenantId := meta.(*ArmClient).tenantId
 
 	log.Printf("[INFO] preparing arguments for Managed Kubernetes Cluster update.")
@@ -825,8 +855,9 @@ func resourceArmKubernetesClusterUpdate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceArmKubernetesClusterRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*ArmClient).containers.KubernetesClustersClient
-	ctx := meta.(*ArmClient).StopContext
+	client := meta.(*ArmClient).Containers.KubernetesClustersClient
+	ctx, cancel := timeouts.ForRead(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	id, err := azure.ParseAzureResourceID(d.Id())
 	if err != nil {
@@ -932,8 +963,9 @@ func resourceArmKubernetesClusterRead(d *schema.ResourceData, meta interface{}) 
 }
 
 func resourceArmKubernetesClusterDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*ArmClient).containers.KubernetesClustersClient
-	ctx := meta.(*ArmClient).StopContext
+	client := meta.(*ArmClient).Containers.KubernetesClustersClient
+	ctx, cancel := timeouts.ForDelete(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	id, err := azure.ParseAzureResourceID(d.Id())
 	if err != nil {
@@ -1006,7 +1038,7 @@ func expandKubernetesClusterAddonProfiles(d *schema.ResourceData) map[string]*co
 		config := make(map[string]*string)
 		enabled := value["enabled"].(bool)
 
-		if workspaceId, ok := value["log_analytics_workspace_id"]; ok {
+		if workspaceId, ok := value["log_analytics_workspace_id"]; ok && workspaceId != "" {
 			config["logAnalyticsWorkspaceResourceID"] = utils.String(workspaceId.(string))
 		}
 
@@ -1022,7 +1054,7 @@ func expandKubernetesClusterAddonProfiles(d *schema.ResourceData) map[string]*co
 		config := make(map[string]*string)
 		enabled := value["enabled"].(bool)
 
-		if subnetName, ok := value["subnet_name"]; ok {
+		if subnetName, ok := value["subnet_name"]; ok && subnetName != "" {
 			config["SubnetName"] = utils.String(subnetName.(string))
 		}
 
@@ -1038,6 +1070,17 @@ func expandKubernetesClusterAddonProfiles(d *schema.ResourceData) map[string]*co
 		enabled := value["enabled"].(bool)
 
 		addonProfiles["kubeDashboard"] = &containerservice.ManagedClusterAddonProfile{
+			Enabled: utils.Bool(enabled),
+			Config:  nil,
+		}
+	}
+
+	azurePolicy := profile["azure_policy"].([]interface{})
+	if len(azurePolicy) > 0 && azurePolicy[0] != nil {
+		value := azurePolicy[0].(map[string]interface{})
+		enabled := value["enabled"].(bool)
+
+		addonProfiles["azurepolicy"] = &containerservice.ManagedClusterAddonProfile{
 			Enabled: utils.Bool(enabled),
 			Config:  nil,
 		}
@@ -1123,6 +1166,20 @@ func flattenKubernetesClusterAddonProfiles(profile map[string]*containerservice.
 	}
 	values["kube_dashboard"] = kubeDashboards
 
+	azurePolicies := make([]interface{}, 0)
+	if azurePolicy := profile["azurepolicy"]; azurePolicy != nil {
+		enabled := false
+		if enabledVal := azurePolicy.Enabled; enabledVal != nil {
+			enabled = *enabledVal
+		}
+
+		output := map[string]interface{}{
+			"enabled": enabled,
+		}
+		azurePolicies = append(azurePolicies, output)
+	}
+	values["azure_policy"] = azurePolicies
+
 	return []interface{}{values}
 }
 
@@ -1188,6 +1245,10 @@ func expandKubernetesClusterAgentPoolProfiles(d *schema.ResourceData) ([]contain
 			profile.NodeTaints = nodeTaints
 		}
 
+		if enableNodePublicIP := config["enable_node_public_ip"]; enableNodePublicIP != nil {
+			profile.EnableNodePublicIP = utils.Bool(enableNodePublicIP.(bool))
+		}
+
 		profiles = append(profiles, profile)
 	}
 
@@ -1248,20 +1309,26 @@ func flattenKubernetesClusterAgentPoolProfiles(profiles *[]containerservice.Mana
 			subnetId = *profile.VnetSubnetID
 		}
 
+		enableNodePublicIP := false
+		if profile.EnableNodePublicIP != nil {
+			enableNodePublicIP = *profile.EnableNodePublicIP
+		}
+
 		agentPoolProfile := map[string]interface{}{
-			"availability_zones":  utils.FlattenStringSlice(profile.AvailabilityZones),
-			"count":               count,
-			"enable_auto_scaling": enableAutoScaling,
-			"max_count":           maxCount,
-			"max_pods":            maxPods,
-			"min_count":           minCount,
-			"name":                name,
-			"node_taints":         utils.FlattenStringSlice(profile.NodeTaints),
-			"os_disk_size_gb":     osDiskSizeGB,
-			"os_type":             string(profile.OsType),
-			"type":                string(profile.Type),
-			"vm_size":             string(profile.VMSize),
-			"vnet_subnet_id":      subnetId,
+			"availability_zones":    utils.FlattenStringSlice(profile.AvailabilityZones),
+			"count":                 count,
+			"enable_auto_scaling":   enableAutoScaling,
+			"enable_node_public_ip": enableNodePublicIP,
+			"max_count":             maxCount,
+			"max_pods":              maxPods,
+			"min_count":             minCount,
+			"name":                  name,
+			"node_taints":           utils.FlattenStringSlice(profile.NodeTaints),
+			"os_disk_size_gb":       osDiskSizeGB,
+			"os_type":               string(profile.OsType),
+			"type":                  string(profile.Type),
+			"vm_size":               string(profile.VMSize),
+			"vnet_subnet_id":        subnetId,
 
 			// TODO: remove in 2.0
 			"fqdn": fqdnVal,
@@ -1589,7 +1656,7 @@ func flattenAzureRmKubernetesClusterServicePrincipalProfile(profile *containerse
 			val = v.List()
 		}
 
-		if len(val) > 0 {
+		if len(val) > 0 && val[0] != nil {
 			raw := val[0].(map[string]interface{})
 			clientSecret = raw["client_secret"].(string)
 		}

@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/features"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
@@ -247,7 +247,7 @@ func TestAccAzureRMApiManagement_policy(t *testing.T) {
 }
 
 func testCheckAzureRMApiManagementDestroy(s *terraform.State) error {
-	conn := testAccProvider.Meta().(*ArmClient).apiManagement.ServiceClient
+	conn := testAccProvider.Meta().(*ArmClient).ApiManagement.ServiceClient
 
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "azurerm_api_management" {
@@ -287,7 +287,7 @@ func testCheckAzureRMApiManagementExists(resourceName string) resource.TestCheck
 			return fmt.Errorf("Bad: no resource group found in state for Api Management: %s", apiMangementName)
 		}
 
-		conn := testAccProvider.Meta().(*ArmClient).apiManagement.ServiceClient
+		conn := testAccProvider.Meta().(*ArmClient).ApiManagement.ServiceClient
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
 		resp, err := conn.Get(ctx, resourceGroup, apiMangementName)
 		if err != nil {
@@ -337,9 +337,9 @@ resource "azurerm_api_management" "test" {
   publisher_email     = "pub1@email.com"
 
   sku {
-    name = "Developer"
+    name     = "Developer"
     capacity = 1
-	}
+  }
 }
 `, rInt, location, rInt)
 }
@@ -469,8 +469,8 @@ resource "azurerm_api_management" "test" {
   sku_name = "Developer_1"
 
   security {
-    disable_frontend_tls10     = true
-    disable_triple_des_ciphers = true
+    enable_frontend_tls10     = true
+    enable_triple_des_ciphers = true
   }
 }
 `, rInt, location, rInt)
@@ -522,8 +522,8 @@ resource "azurerm_resource_group" "test2" {
 }
 
 resource "azurerm_resource_group" "test3" {
-	name     = "acctestRG3-%d"
-	location = "%s"
+  name     = "acctestRG3-%d"
+  location = "%s"
 }
 
 resource "azurerm_api_management" "test" {
@@ -553,8 +553,13 @@ resource "azurerm_api_management" "test" {
   }
 
   security {
-    disable_backend_tls11      = true
-    disable_triple_des_ciphers = true
+    enable_backend_tls11      = true
+    enable_backend_ssl30      = true
+    enable_backend_tls10      = true
+    enable_frontend_ssl30     = true
+    enable_frontend_tls10     = true
+    enable_frontend_tls11     = true
+    enable_triple_des_ciphers = true
   }
 
   hostname_configuration {

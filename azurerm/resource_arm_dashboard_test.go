@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
 )
 
@@ -49,7 +49,7 @@ func testCheckAzureRMDashboardExists(resourceName string) resource.TestCheckFunc
 			return fmt.Errorf("Bad: no resource group found in state for Dashboard: %s", dashboardName)
 		}
 
-		client := testAccProvider.Meta().(*ArmClient).portal.DashboardsClient
+		client := testAccProvider.Meta().(*ArmClient).Portal.DashboardsClient
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 		resp, err := client.Get(ctx, resourceGroup, dashboardName)
@@ -66,7 +66,7 @@ func testCheckAzureRMDashboardExists(resourceName string) resource.TestCheckFunc
 }
 
 func testCheckAzureRMDashboardDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ArmClient).portal.DashboardsClient
+	client := testAccProvider.Meta().(*ArmClient).Portal.DashboardsClient
 	ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 	for _, rs := range s.RootModule().Resources {
@@ -93,16 +93,16 @@ func testCheckAzureRMDashboardDestroy(s *terraform.State) error {
 
 func testResourceArmDashboard_basic(rInt int, location string) string {
 	return fmt.Sprintf(`
-    resource "azurerm_resource_group" "test-group"{
-        name = "acctestRG-%d"
-        location = "%s"
-    }
+resource "azurerm_resource_group" "test-group" {
+  name     = "acctestRG-%d"
+  location = "%s"
+}
 
-    resource "azurerm_dashboard" "test" {
-        name                       = "my-test-dashboard"
-        resource_group_name        = azurerm_resource_group.test-group.name
-        location                   = azurerm_resource_group.test-group.location
-        dashboard_properties       = <<DASH
+resource "azurerm_dashboard" "test" {
+  name                 = "my-test-dashboard"
+  resource_group_name  = azurerm_resource_group.test-group.name
+  location             = azurerm_resource_group.test-group.location
+  dashboard_properties = <<DASH
 {
    "lenses": {
         "0": {
@@ -134,6 +134,6 @@ func testResourceArmDashboard_basic(rInt int, location string) string {
 	}
 }
 DASH
-	}
+}
 `, rInt, location)
 }

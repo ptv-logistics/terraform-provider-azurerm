@@ -1,4 +1,5 @@
 ---
+subcategory: "Monitor"
 layout: "azurerm"
 page_title: "Azure Resource Manager: azurerm_monitor_action_group"
 sidebar_current: "docs-azurerm-resource-monitor-action-group"
@@ -14,14 +15,14 @@ Manages an Action Group within Azure Monitor.
 ## Example Usage
 
 ```hcl
-resource "azurerm_resource_group" "test" {
+resource "azurerm_resource_group" "example" {
   name     = "monitoring-resources"
   location = "West US"
 }
 
-resource "azurerm_monitor_action_group" "test" {
+resource "azurerm_monitor_action_group" "example" {
   name                = "CriticalAlertsAction"
-  resource_group_name = "${azurerm_resource_group.test.name}"
+  resource_group_name = "${azurerm_resource_group.example.name}"
   short_name          = "p0action"
 
   email_receiver {
@@ -41,8 +42,9 @@ resource "azurerm_monitor_action_group" "test" {
   }
 
   webhook_receiver {
-    name        = "callmyapiaswell"
-    service_uri = "http://example.com/alert"
+    name                    = "callmyapiaswell"
+    service_uri             = "http://example.com/alert"
+    use_common_alert_schema = true
   }
 }
 ```
@@ -81,6 +83,7 @@ The following arguments are supported:
 
 * `name` - (Required) The name of the webhook receiver. Names must be unique (case-insensitive) across all receivers within an action group.
 * `service_uri` - (Required) The URI where webhooks should be sent.
+* `use_common_alert_schema` - (Optional) Enables or disables the common alert schema.
 
 ## Attributes Reference
 
@@ -93,5 +96,5 @@ The following attributes are exported:
 Action Groups can be imported using the `resource id`, e.g.
 
 ```shell
-terraform import azurerm_monitor_action_group.test /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Insights/actionGroups/myagname
+terraform import azurerm_monitor_action_group.example /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/group1/providers/Microsoft.Insights/actionGroups/myagname
 ```

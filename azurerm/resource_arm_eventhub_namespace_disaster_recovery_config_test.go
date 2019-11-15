@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
@@ -96,7 +96,7 @@ func TestAccAzureRMEventHubNamespaceDisasterRecoveryConfig_update(t *testing.T) 
 }
 
 func testCheckAzureRMEventHubNamespaceDisasterRecoveryConfigDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*ArmClient).eventhub.DisasterRecoveryConfigsClient
+	client := testAccProvider.Meta().(*ArmClient).Eventhub.DisasterRecoveryConfigsClient
 	ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 	for _, rs := range s.RootModule().Resources {
@@ -121,7 +121,7 @@ func testCheckAzureRMEventHubNamespaceDisasterRecoveryConfigDestroy(s *terraform
 
 func testCheckAzureRMEventHubNamespaceDisasterRecoveryConfigExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(*ArmClient).eventhub.DisasterRecoveryConfigsClient
+		client := testAccProvider.Meta().(*ArmClient).Eventhub.DisasterRecoveryConfigsClient
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
 
 		// Ensure we have enough information in state to look up in API
@@ -169,10 +169,10 @@ resource "azurerm_eventhub_namespace" "testb" {
 }
 
 resource "azurerm_eventhub_namespace_disaster_recovery_config" "test" {
-  name                   = "acctest-EHN-DRC-%[1]d"
-  resource_group_name    = "${azurerm_resource_group.test.name}"
-  namespace_name         = "${azurerm_eventhub_namespace.testa.name}"
-  partner_namespace_id   = "${azurerm_eventhub_namespace.testb.id}"
+  name                 = "acctest-EHN-DRC-%[1]d"
+  resource_group_name  = "${azurerm_resource_group.test.name}"
+  namespace_name       = "${azurerm_eventhub_namespace.testa.name}"
+  partner_namespace_id = "${azurerm_eventhub_namespace.testb.id}"
 }
 
 `, rInt, location, altlocation)
@@ -200,11 +200,11 @@ resource "azurerm_eventhub_namespace" "testb" {
 }
 
 resource "azurerm_eventhub_namespace_disaster_recovery_config" "test" {
-  name                   = "${azurerm_eventhub_namespace.testa.name}"
-  resource_group_name    = "${azurerm_resource_group.test.name}"
-  namespace_name         = "${azurerm_eventhub_namespace.testa.name}"
-  partner_namespace_id   = "${azurerm_eventhub_namespace.testb.id}"
-  alternate_name         = "acctest-EHN-DRC-%[1]d-alt"
+  name                 = "${azurerm_eventhub_namespace.testa.name}"
+  resource_group_name  = "${azurerm_resource_group.test.name}"
+  namespace_name       = "${azurerm_eventhub_namespace.testa.name}"
+  partner_namespace_id = "${azurerm_eventhub_namespace.testb.id}"
+  alternate_name       = "acctest-EHN-DRC-%[1]d-alt"
 }
 
 `, rInt, location, altlocation)
@@ -239,10 +239,10 @@ resource "azurerm_eventhub_namespace" "testc" {
 }
 
 resource "azurerm_eventhub_namespace_disaster_recovery_config" "test" {
-  name                   = "acctest-EHN-DRC-%[1]d"
-  resource_group_name    = "${azurerm_resource_group.test.name}"
-  namespace_name         = "${azurerm_eventhub_namespace.testa.name}"
-  partner_namespace_id   = "${azurerm_eventhub_namespace.testc.id}"
+  name                 = "acctest-EHN-DRC-%[1]d"
+  resource_group_name  = "${azurerm_resource_group.test.name}"
+  namespace_name       = "${azurerm_eventhub_namespace.testa.name}"
+  partner_namespace_id = "${azurerm_eventhub_namespace.testc.id}"
 }
 
 `, rInt, location, altlocation)

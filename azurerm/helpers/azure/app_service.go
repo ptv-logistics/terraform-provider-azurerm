@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/web/mgmt/2018-02-01/web"
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/suppress"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/validate"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
@@ -483,6 +483,11 @@ func SchemaAppServiceSiteConfig() *schema.Schema {
 				},
 
 				"cors": SchemaWebCorsSettings(),
+
+				"auto_swap_slot_name": {
+					Type:     schema.TypeString,
+					Optional: true,
+				},
 			},
 		},
 	}
@@ -1520,6 +1525,10 @@ func ExpandAppServiceSiteConfig(input interface{}) (*web.SiteConfig, error) {
 		siteConfig.Cors = &expand
 	}
 
+	if v, ok := config["auto_swap_slot_name"]; ok {
+		siteConfig.AutoSwapSlotName = utils.String(v.(string))
+	}
+
 	return siteConfig, nil
 }
 
@@ -1639,6 +1648,10 @@ func FlattenAppServiceSiteConfig(input *web.SiteConfig) []interface{} {
 	result["min_tls_version"] = string(input.MinTLSVersion)
 
 	result["cors"] = FlattenWebCorsSettings(input.Cors)
+
+	if input.AutoSwapSlotName != nil {
+		result["auto_swap_slot_name"] = *input.AutoSwapSlotName
+	}
 
 	return append(results, result)
 }
